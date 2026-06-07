@@ -28,7 +28,7 @@ BLPU ;Index on BLPU record
 	. s post=$p(rec,d,2)
 	. S i=i+1
 	. S ^UPRNX("X1",post,uprn)=""
-	. I '(i#10000) w !,i," X1 index set"
+	. I '(i#50000) w !,i," X1 index set"
 	q
 	;
 UPC ;Checks for any parent child links
@@ -46,23 +46,25 @@ REENT for  s uprn=$O(^UPRN("U",uprn)) q:uprn=""  d
 	. . for  s key=$O(^UPRN("U",uprn,table,key)) q:key=""  d
 	. . . s rec=^UPRN("U",uprn,table,key)
 	. . . q:rec=""
-	. . . s flat=$p(rec,d,1)
-	. . . s build=$p(rec,d,2)
-	. . . s bno=$p(rec,d,3)
-	. . . s depth=$p(rec,d,4)
-	. . . s street=$p(rec,d,5)
-	. . . s deploc=$p(rec,d,6)
-	. . . s loc=$p(rec,d,7)
-	. . . s town=$p(rec,d,8)
-	. . . s post=$p(rec,d,9)
-	. . . s org=$p(rec,d,10)
-	. . . s dep=$p(rec,d,11)
-	. . . s ptype=$p(rec,d,12)
-	. . . d setind
+	. . . d indrec(uprn,table,key,rec)
 	. . . s i=i+1
-	. . . I '(i#10000) w i," " set ^I=i
+	. . . I '(i#50000) w i," " set ^I=i
 	q
-setind ;Sets indexes
+indrec(uprn,table,key,rec) ;Sets indexes for a record
+	n ZONE,flat,build,bno,depth,street,deploc,loc,t,town,post,org,dep,ptype,d,xflat,xbno
+	s d="~"	
+	s flat=$p(rec,d,1)
+	s build=$p(rec,d,2)
+	s bno=$p(rec,d,3)
+	s depth=$p(rec,d,4)
+	s street=$p(rec,d,5)
+	s deploc=$p(rec,d,6)
+	s loc=$p(rec,d,7)
+	s town=$p(rec,d,8)
+	s post=$p(rec,d,9)
+	s org=$p(rec,d,10)
+	s dep=$p(rec,d,11)
+	s ptype=$p(rec,d,12)
 	d setind1
 	i flat["/"!(bno["/") d
 	. s xflat=flat,xbno=bno
@@ -109,6 +111,8 @@ setind1 ;Sets indexes
 	. i pdepth'=depth D indexstr("STR",pdepth)
 	i deploc'="",street="" d
 	. S ^UPRNX("X5",post,deploc,bno,build,flat,uprn,table,key)=""
+	i loc'="",build'="",street="",bno="" d
+	. S ^UPRNX("X5",post,loc,bno,build,flat,uprn,table,key)=""
 	i depth'="",street="" d
 	. S ^UPRNX("X5",depth,bno,build,flat,uprn,table,key)=""
 	. i 'same d
