@@ -38,6 +38,9 @@ RTNS ;
 	; UPRNUI2
 	; UPRNW
 	; SCOTDPA
-	;
-	;
-	;
+	; VPRJREQ
+	; VPRJRSP
+	; UPRNUI2
+	; UPRNACT
+	; VUE
+	; UPRNUI3

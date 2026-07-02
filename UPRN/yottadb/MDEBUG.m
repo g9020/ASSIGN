@@ -1,15 +1,13 @@
 MDEBUG  			;Debugging Routine for GT.M/YottaDB by Jens Wulf
-				;Version 0.9.2
-				;2023-01-13
+				;Version 0.9.8
+				;2023-11-01
 				;License: LGPL
 				;Usage on your own Risk - No guaranties
 				;
 				;
 				;Do Initialization and start Loop to Wait	 for Debugger-Commands
 				;ignoreVars:%PROGNAME
-	S $ZTRAP="B"
-	S $ZSTEP="S %ERROR=$ZSTatus ZSHOW ""VIS"":^%MDEBUG($J,""VARS"") S %STEP=$$WAIT^MDEBUG($ZPOS) ZST:%STEP=""I"" INTO ZST:%STEP=""O"" OVER ZST:%STEP=""F"" OUTOF ZC:%STEP=""C"""
-	S $ZSTEP="S %ERROR=$ZSTatus ZSHOW ""VIS"":^%MDEBUG($J,""VARS"") S %STEP=$$WAIT^MDEBUG($ZPOS) ZGOTO 1"
+	S $ZSTEP="ZSHOW ""VIS"":^%MDEBUG($J,""VARS"") S %STEP=$$WAIT^MDEBUG($ZPOS) ZST:%STEP=""I"" INTO ZST:%STEP=""O"" OVER ZST:%STEP=""F"" OUTOF ZC:%STEP=""C"""
 	D INIT
 	F  S %STEP=$$WAIT("") Q:%STEP["^"
 	;Relink and recognize Source-Changes
@@ -18,6 +16,7 @@ MDEBUG  			;Debugging Routine for GT.M/YottaDB by Jens Wulf
 RELINK(%PROG)			;LINK Sourcefile again and Start over
 	S %PROGNAME=%PROG
 	K (%PROGNAME)		;Clean-Up Variables
+	S $ZSTATUS=""		;Clean-Up Status
 	ZGOTO 1:RELINK1		;Clean-Up Stack
 RELINK1				;Entry after Stack-Clearance
 	D REFRESHBP		;Remember Breakpoints
@@ -29,14 +28,11 @@ RELINK1				;Entry after Stack-Clearance
 	Q
 INIT    			;Open TCP-Communication-Port
 	N %IO,%DEV,%PORT,%SOCKET,%ZTFORM
-	U 0 W !,"Relinking routines.."
-	U 0 D ^ZLINK
-	u 0 w !,"Waiting for client..."
 	;USE $P:(EXCEPTION="D BYE":CTRAP=$C(3))	;Ensure Clean-Up when Ctrl-C is pressed
-	USE $P	;Ensure Clean-Up when Ctrl-C is pressed
+	U $P
 	S %IO=$I,%PORT=9000,%DEV="|TCP|"_%PORT_"|"_$J
 	O %DEV:(ZLISTEN=%PORT_":TCP":NODELIMITER:ATTACH="listener"):5:"SOCKET"
-	E  U 0 W "DEBUG-Port could not be opened.",! HALT
+	E  U $P W "DEBUG-Port could not be opened.",! HALT
 	U %DEV
 	W /LISTEN(1)
 	; wait for connection, $KEY will be "CONNECT|socket_handle|remote_ipaddress"
@@ -45,28 +41,28 @@ INIT    			;Open TCP-Communication-Port
 	KILL ^%MDEBUG($J)
 	S ^%MDEBUG($J,"SOCKET")=%SOCKET
 	S ^%MDEBUG($J,"DEV")=%DEV
-	d ^ZLINK
 	D OUT("Debugger connected")
-	;If there's no explicit Error-Handling show Errors in Debugger
-	S:$ZTRAP="B" $ZTRAP=$ZSTEP
+	;If there's no explicit error-handling show errors in debugger
+	S:($ZTRAP="B")!($ZTRAP="")&($ETRAP="") $ETRAP="ZSHOW ""VIS"":^%MDEBUG($J,""VARS"") S %STEP=$$WAIT^MDEBUG($ZPOS) ZST:%STEP=""I"" INTO ZST:%STEP=""O"" OVER ZST:%STEP=""F"" OUTOF ZC:%STEP=""C"""
 	S $ZSTATUS=""
-	;Set IO back to origin IO
-	U %IO
+	S $ECODE=""		;Clean-Up Errors
+	U %IO			;Set IO back to original IO
 	Q
-WAIT(%ZPOS)   			;Wait for next Command from Editor
+WAIT(%ZPOS)   			;Wait for next command from editor
 	N %DEV,%IO,%CMD,%CMDS,%CMDLINE,%SOCKET,%I,%VAR,%MI
-	;possible Debugger-Commands
-	S %CMDS="START;QUIT;EXIT;INTO;OUTOF;OVER;CONTINUE;SETBP;VARS;INTERNALS;CLEARBP;REQUESTBP;RESET;GETVAR;ERRCHK;RESTART"
-	S $ET=$ZSTEP
+	;possible debugger-commands
+	S %CMDS="START;QUIT;EXIT;INTO;OUTOF;OVER;CONTINUE;SETBP;VARS;INTERNALS;CLEARBP;REQUESTBP;RESET;GETGBL;GETVAR;ERRCHK;RESTART;SEARCHGBL"
 	S %IO=$I
 	S %DEV=^%MDEBUG($J,"DEV"),%SOCKET=^%MDEBUG($J,"SOCKET")
 	U %DEV:(SOCKET=%SOCKET:DELIM=$C(10):EXCEPTION="HALT")
-	S:$ZTRAP="B" $ZTRAP=$ZSTEP	;Error-Handling by Debugger if not set by Debuggee
+	;Error-Handling by Debugger if not set by Debuggee
+	S:($ZTRAP="B")!($ZTRAP="")&($ETRAP="") $ETRAP="ZSHOW ""VIS"":^%MDEBUG($J,""VARS"") S %STEP=$$WAIT^MDEBUG($ZPOS) ZST:%STEP=""I"" INTO ZST:%STEP=""O"" OVER ZST:%STEP=""F"" OUTOF ZC:%STEP=""C"""
 	;D OUT(%ZPOS_" "_$J_" "_^%MDEBUG($J,"DEV"))
-	I %ZPOS[("^"_$T(+0))&($ZSTATUS'="") D   ;Prevent Debugger from jumping into this Program
+	I %ZPOS[("^"_$T(+0))&($ZSTATUS'="")!($G(^%MDEBUG($J,"VARS","S",1))[("^"_$T(+0))) D   ;Prevent Debugger from jumping into this Program
 	. S %I="" F  S %I=$O(^%MDEBUG($J,"VARS","I",%I)) Q:%I=""  D
 	. . S %VAR=^%MDEBUG($J,"VARS","I",%I) S:$E(%VAR,1,10)="$ZPOSITION" %MI=%I
 	. . S:$E(%VAR,1,8)="$ZSTATUS" ^%MDEBUG($J,"VARS","I",%MI)="$ZPOSITION="""_$P(%VAR,",",2)_""""
+	;
 	I $D(^%MDEBUG($J,"VARS","I")) D	;Sending internal, local Variables and Stack to Debugger
 	. W "***STARTVAR",!
 	. ;D OUT("Sending Vars")
@@ -77,9 +73,11 @@ WAIT(%ZPOS)   			;Wait for next Command from Editor
 READLOOP			;Wait for next Command from Editor
 	U %DEV:(SOCKET=%SOCKET:DELIM=$C(10))
 	F  R %CMDLINE S %CMD=$P(%CMDLINE,";",1) Q:$P(%CMD,";",1)'=""&(%CMDS[$TR(%CMD,";"))
-	D OUT(%CMDLINE)
-	I %CMD="REQUESTBP" W "***STARTBP",! ZSHOW "B" W "***ENDBP",! G READLOOP	;Transmit Breakpoints to Debugger
+	;D OUT(%CMDLINE)
+	I %CMD="REQUESTBP" W "***STARTBP",! D SHOWBP W "***ENDBP",! G READLOOP	;Transmit Breakpoints to Debugger
 	I %CMD="GETVAR" D GETVAR($P(%CMDLINE,";",2,999)) G READLOOP	;Transmit Variables
+	I %CMD="GETGBL" D GETGBL($P(%CMDLINE,";",2,999)) G READLOOP	;Get globals
+	I %CMD="SEARCHGBL" D SEARCHGBL($P(%CMDLINE,";",2),$P(%CMDLINE,";",3,999)) G READLOOP	;Search for global entry
 	I %CMD="SETBP" D SETBP($P(%CMDLINE,";",2),$P(%CMDLINE,";",3),$P(%CMDLINE,";",4)) G READLOOP	;Set a new Breakpoint
 	I %CMD="CLEARBP" D CLEARBP($P(%CMDLINE,";",2),$P(%CMDLINE,";",3)) G READLOOP	;Clear a Breakpoint
 	I %CMD="RESET" G RESET						; Reset States and wait for a new Connection
@@ -110,29 +108,72 @@ SETBP(FILE,LINE,CONDITION)        	;Set Breakpoint
 	S ^%MDEBUG($J,"BP",ZBPOS)=CONDITION
 	S:CONDITION'="" CONDITION="I ("_CONDITION_") "
 	S ZBCMD="ZB "_ZBPOS_":"""_CONDITION_"ZSHOW """"VIS"""":^%MDEBUG($J,""""VARS"""") S %STEP=$$WAIT^MDEBUG($ZPOS) ZST:%STEP=""""I"""" INTO ZST:%STEP=""""O"""" OVER ZST:%STEP=""""F"""" OUTOF ZC:%STEP=""""C""""  H:%STEP=""""H"""""""
-	D REFRESHBP
 	S $ZTRAP="B"
 	X ZBCMD
+	D REFRESHBP
+	Q
+BPRESET				;Set BPs again after Recompile
+	N BP,ZBCMD,CONDITION
+	ZB -*
+	S BP="" F  S BP=$O(^%MDEBUG($J,"BP",BP)) Q:BP=""  D
+	. S CONDITION=^%MDEBUG($J,"BP",BP)
+	. S:CONDITION'="" CONDITION="I ("_CONDITION_") "
+	. S ZBCMD="ZB "_BP_":"""_CONDITION_"ZSHOW """"VIS"""":^%MDEBUG($J,""""VARS"""") S %STEP=$$WAIT^MDEBUG($ZPOS) ZST:%STEP=""""I"""" INTO ZST:%STEP=""""O"""" OVER ZST:%STEP=""""F"""" OUTOF ZC:%STEP=""""C""""  H:%STEP=""""H"""""""
+	. X ZBCMD
+	D REFRESHBP
 	Q
 CLEARBP(FILE,LINE)      	;Clear Breakpoint
 	N ROUTINE,ZBPOS,BP
 	S ROUTINE=$$RNAME(FILE)
-	;	
 	I ROUTINE="" ZB -* D REFRESHBP Q     ;Clear all Breakpoints
-	IF LINE="" D BREAKPOINTS Q
+	IF LINE="" D  Q
+	. D REFRESHBP
+	. S BP="" F  S BP=$O(^%MDEBUG($J,"BP",BP)) Q:BP=""  D
+	. . I BP[("^"_ROUTINE) S ZBPOS="-"_BP ZB @ZBPOS
+	. D REFRESHBP
 	S ZBPOS="-+"_LINE_"^"_ROUTINE
+	;D OUT("BREAKPOS:"_ZBPOS)
 	ZB:$T(@$E(ZBPOS,2,99))'="" @ZBPOS
 	D REFRESHBP
 	Q
-BREAKPOINTS ;
-	N $ZTRAP
-	s $ZTRAP="ZGOTO NBP"
-	D REFRESHBP
-	S BP=""
-NBP	S BP=$O(^%MDEBUG($J,"BP",BP)) Q:BP=""
-	I BP[("^"_ROUTINE) S ZBPOS="-"_BP ZB @ZBPOS
-	D REFRESHBP
-	G NBP
+GETGBL(EXPRESSION)		;Get Global-Content an pass it to Editor
+	N $ZT,I,VAR,KEYCOUNT,KEY,GBLNAME,GBLREF
+	S $ZT="G GETGBL1^"_$T(+0)
+	W "***STARTGBL",!
+	I EXPRESSION="" S I="^%" F  S I=$O(@I) Q:I=""  D
+	. W $D(@I)+10 S VAR=I_"="_$G(@I) S:VAR[$C(10) VAR=$$MTR(VAR,$C(10),"_$C(10)_") W VAR,!
+	I EXPRESSION'="" D
+	. S KEY=""
+	. I EXPRESSION["("&($$LASTCHAR(EXPRESSION)'=")") D  I 1
+	. . S EXPRESSION=EXPRESSION_")"
+	. . S KEYCOUNT=$QL(EXPRESSION),KEY=$QS(EXPRESSION,KEYCOUNT)
+	. . S GBLNAME=$P(EXPRESSION,KEY,1,$L($E(EXPRESSION,1,$L(EXPRESSION)-1),KEY)-1)
+	. . S:$$LASTCHAR(GBLNAME)="""" GBLNAME=$E(GBLNAME,1,$L(GBLNAME)-1)
+	. . S GBLNAME=GBLNAME_"KEY)"
+	. E  S KEYCOUNT=$QL(EXPRESSION) D
+	. . S:KEYCOUNT=0 GBLNAME=EXPRESSION_"(KEY)"
+	. . S:KEYCOUNT>0 GBLNAME=$E(EXPRESSION,1,$L(EXPRESSION)-1)_",KEY"_")"
+	. F I=1:1:1000 S KEY=$O(@GBLNAME) Q:KEY=""  D
+	. . S GBLREF=$E(GBLNAME,1,$L(GBLNAME)-4)_""""_KEY_""""_")"
+	. . W $D(@GBLNAME)+10+(40*(I=1000)) S VAR=GBLREF_"="_$G(@GBLNAME) S:VAR[$C(10) VAR=$$MTR(VAR,$C(10),"_$C(10)_") W VAR,!
+GETGBL1				;Continue-Label if something fails
+	W "***ENDGBL",!
+	S $ZSTATUS=""
+	Q
+SEARCHGBL(GLOBAL,SEARCH)	;Search for global-entries that contain the search string
+	N $ZT,I,VALUE,VAR
+	W "***STARTGBL",!
+	S $ZT="G GETGBL1^"_$T(+0)
+	S SEARCH=$ZCONVERT(SEARCH,"L")
+	S I=0
+	F  S GLOBAL=$Q(@GLOBAL) Q:GLOBAL=""  D  Q:I=1000
+	. S VALUE=@GLOBAL I $ZCONVERT(GLOBAL,"L")[SEARCH!($ZCONVERT(VALUE,"L")[SEARCH) D
+	. . W $D(@GLOBAL)+10+(40*(I=1000))
+	. . S VAR=GLOBAL_"="_VALUE
+	. . S:VAR[$C(10) VAR=$$MTR(VAR,$C(10),"_$C(10)_")
+	. . W VAR,!
+	. . S I=I+1
+	G GETGBL1
 GETVAR(%EXPRESSION)		;Get Variable-Content or Expression-Value an pass it to Editor
 	N $ZT
 	S $ZT="G GETVAR1^"_$T(+0)
@@ -152,36 +193,26 @@ ENDPROGRAM			;Stop the Debugger and wait for new Debugger-Connection
 	. W "***ENDPROGRAM",!
 	D RESET
 	Q
-ERROR ;
-	u 0
-	W !,$ZStatus
-	W !,"Recovering..."
-	G RESET	
 RESET   			;Clean up and wait for new Connection
 	S %DEV=$G(^%MDEBUG($J,"DEV"))
 	KILL ^%MDEBUG($J,"VARS")
 	C:%DEV'="" %DEV
-	u 0 w !,"Resetting.."
 	ZGOTO 1:MDEBUG
 	Q
 REFRESHBP       		;Remember Breakpoint-Positions to avoid Collisions between ZSTEP INTO and ZBREAK
-	N BP,BPS,BPNEU,IO
+	N BP,BPS,BPNEU
 	ZSHOW "B":BPS
 	S BP="" F  S BP=$O(BPS("B",BP)) Q:BP=""  D
+	. S BPS("B",BP)=$P(BPS("B",BP),">",1)
 	. S BPNEU(BPS("B",BP))=$G(^%MDEBUG($J,"BP",BPS("B",BP)))
-	;S IO=$I ZWR:$D(BPNEU) BPNEU U IO
+	KILL ^%MDEBUG($J,"BP")
 	M:$D(BPNEU) ^%MDEBUG($J,"BP")=BPNEU
 	Q
-BPRESET				;Set BPs again after Recompile
-	N BP,ZBCMD,CONDITION
-	ZB -*
-	S BP="" F  S BP=$O(^%MDEBUG($J,"BP",BP)) Q:BP=""  D
-	. S CONDITION=^%MDEBUG($J,"BP",BP)
-	. S:CONDITION'="" CONDITION="I ("_CONDITION_") "
-	. ;D OUT(BP_" COND: "_CONDITION)
-	. S ZBCMD="ZB "_BP_":"""_CONDITION_"ZSHOW """"VIS"""":^%MDEBUG($J,""""VARS"""") S %STEP=$$WAIT^MDEBUG($ZPOS) ZST:%STEP=""""I"""" INTO ZST:%STEP=""""O"""" OVER ZST:%STEP=""""F"""" OUTOF ZC:%STEP=""""C""""  H:%STEP=""""H"""""""
-	. X ZBCMD
-	D REFRESHBP
+SHOWBP				;Get active Breakpoints and transmit them to Debugger
+	N BPS,BP
+	ZSHOW "B":BPS
+	S BP="" F  S BP=$O(BPS("B",BP)) Q:BP=""  D
+	. W $P(BPS("B",BP),">",1),!
 	Q
 POSCONV(ZPOS)			;Convert Position in Form LABEL+n^ROUTINE TO +m^ROUTINE
 	Q:$E(ZPOS,1)="+" ZPOS
@@ -203,6 +234,7 @@ OUT(VAR)			;DEBUG-Output
 	W VAR,!
 	U IO
 	Q
+LASTCHAR(STRING) Q $E(STRING,$L(STRING))
 MTR(VAR,SUCH,ERSETZ)		;Replace one Char in String by several chars
 	Q:SUCH="" VAR
 	N POS

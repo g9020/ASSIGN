@@ -34,65 +34,25 @@
 34	Buckinghamshire	two-tier	South East	"5,06,700"	324	"1,565"
 35	Cumbria	two-tier	North West	"4,99,800"	74	"6,767"
 36	Wiltshire	unitary	South West	"4,74,300"	146	"3,255"
-37	Bristol	unitary	South West	"4,28,100"	"3,906"	110
 38	Dorset	two-tier	South West	"4,13,800"	163	"2,542"
 39	Cheshire East	unitary	North West	"3,70,700"	318	"1,166"
 40	East Riding of Yorkshire	unitary	Yorkshire and the Humber	"3,34,700"	139	"2,408"
-41	Leicester	unitary	East Midlands	"3,29,600"	"4,494"	73
 42	Cheshire West and Chester	unitary	North West	"3,29,500"	359	917
 43	Northumberland	unitary	North East	"3,16,300"	63	"5,013"
 44	Shropshire	unitary	West Midlands	"3,07,100"	96	"3,197"
-45	Nottingham	unitary	East Midlands	"3,03,900"	"4,073"	75
-46	Brighton & Hove	unitary	South East	"2,73,000"	"3,302"	83
 47	Medway	unitary	South East	"2,64,900"	"1,379"	192
 48	South Gloucestershire	unitary	South West	"2,63,400"	530	497
-49	Plymouth	unitary	South West	"2,56,600"	"3,216"	80
-50	Hull	unitary	Yorkshire and the Humber	"2,56,100"	"3,584"	71
 51	Central Bedfordshire	unitary	East	"2,55,600"	357	716
-52	Milton Keynes	unitary	South East	"2,49,900"	810	309
-53	Derby	unitary	East Midlands	"2,48,900"	"3,190"	78
-54	Stoke-on-Trent	unitary	West Midlands	"2,48,700"	"2,661"	93
-55	Southampton	unitary	South East	"2,35,900"	"4,733"	50
-56	Swindon	unitary	South West	"2,09,700"	911	230
-57	Portsmouth	unitary	South East	"2,05,400"	"5,089"	40
-58	Luton	unitary	East	"2,03,600"	"4,696"	43
 59	North Somerset	unitary	South West	"2,03,100"	543	374
-60	Warrington	unitary	North West	"2,02,700"	"1,122"	181
-61	York	unitary	Yorkshire and the Humber	"1,97,800"	727	272
-62	Stockton-on-Tees	unitary	North East	"1,91,800"	941	204
-63	Peterborough	unitary	East	"1,84,500"	537	343
-64	Herefordshire	unitary	West Midlands	"1,83,600"	84	"2,180"
-65	Bournemouth	unitary	South West	"1,83,500"	"3,974"	46
-66	Bath and North East Somerset	unitary	South West	"1,75,500"	508	346
-67	Southend-on-Sea	unitary	East	"1,74,300"	"4,174"	42
 68	North Lincolnshire	unitary	Yorkshire and the Humber	"1,67,500"	198	846
 69	Telford and Wrekin	unitary	West Midlands	"1,66,800"	575	290
 70	North East Lincolnshire	unitary	Yorkshire and the Humber	"1,59,700"	832	192
-71	Thurrock	unitary	East	"1,58,300"	969	163
-72	Bedford	unitary	East	"1,57,800"	331	476
-73	Reading	unitary	South East	"1,55,300"	"3,844"	40
-74	Wokingham	unitary	South East	"1,54,900"	866	179
 75	West Berkshire	unitary	South East	"1,54,100"	219	704
-76	Poole	unitary	South West	"1,48,100"	"2,287"	65
-77	Blackburn with Darwen	unitary	North West	"1,47,700"	"1,078"	137
-78	Windsor and Maidenhead	unitary	South East	"1,45,100"	738	197
-79	Blackpool	unitary	North West	"1,42,100"	"4,077"	35
-80	Slough	unitary	South East	"1,40,700"	"4,323"	33
-81	Middlesbrough	unitary	North East	"1,38,400"	"2,569"	54
-82	Isle of Wight	unitary	South East	"1,38,400"	364	380
-83	Redcar and Cleveland	unitary	North East	"1,35,200"	552	245
-84	Torbay	unitary	South West	"1,31,200"	"2,086"	63
-85	Halton	unitary	North West	"1,25,700"	"1,589"	79
-86	Bracknell Forest	unitary	South East	"1,13,700"	"1,039"	109
-87	Darlington	unitary	North East	"1,05,600"	535	197
-88	Hartlepool	unitary	North East	"92,100"	981	94
-89	Rutland	unitary	East Midlands	"37,600"	99	382
 90	Isles of Scilly	unitary	South West	"2,200"	134	16
 91	Clwyd		Wales	"491,100"		
 92	Conwy		Wales			
 93	Denbighshire		Wales			
 94	Flintshire		Wales			
-95	Wrexham		Wales			
 96	Dyfed		Wales	"375,200"		
 97	Carmarthenshire		Wales			
 98	Ceredigion		Wales			
@@ -101,21 +61,14 @@
 101	Blaenau Gwent		Wales			
 102	Caerphilly		Wales			
 103	Monmouthshire		Wales			
-104	Newport		Wales			
 105	Torfaen		Wales			
 106	Gwynedd		Wales	"187,400"		
 107	Isle of Anglesey		Wales			
 108	Mid Glamorgan		Wales	"423,200"		
-109	Bridgend		Wales			
-110	Merthyr Tydfil		Wales			
-111	Rhondda Cynon Taf		Wales			
 112	Powys		Wales	"132,000"		
 113	South Glamorgan		Wales	"445,000"		
-114	Cardiff		Wales			
 115	Vale of Glamorgan		Wales			
 116	West Glamorgan		Wales	"365,500"		
-117	Neath Port Talbot		Wales			
-118	Swansea		Wales			
 119	Aberdeenshire		Scotland			
 120	Angus		Scotland			
 121	Argyllshire		Scotland			
@@ -152,3 +105,4 @@
 151	South Ayrshire		Scotland			
 152	North Ayrshire		Scotland			
 153	Argyll & Bute		Scotland			
+154	Cheshire		North West			

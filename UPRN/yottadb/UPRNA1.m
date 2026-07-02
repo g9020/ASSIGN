@@ -234,7 +234,27 @@ f156 ;
 	i adflat="",adbuild="",adepth="",adstreet'="",adstreet[" ",'$D(^UPRNX("X.STR",ZONE,adstreet)) d
 	. i $d(^UPRNS("HOUSE",$p(adstreet," ",$l(adstreet," ")))) d
 	. . i adflat="" s adbuild=adstreet,adflat=adbno,adstreet="",adbno=""
-	q
+	i adflat?1n.n.l1" ".e,adbuild="",adbno'="" d
+	. s adbuild=$p(adflat," ",2,20)
+	. s adflat=$p(adflat," ")
+	I adflat'="",adeploc="",adbuild'="",adbno="",adstreet'="",adbuild[adstreet,adbuild?1n.n."-".n1" ".e d
+	. n blen,done
+	. s blen=$l(adbuild," ")
+	. i $p(adbuild," ",blen)=adstreet d
+	. . s done=0
+	. . f i=blen-2:-1:1 d  q:done
+	. . . n xstr
+	. . . s xstr=$p(adbuild," ",i,blen-1)
+	. . . i $d(^UPRNX("X.STR",ZONE,xstr)) d
+	. . . . s adeploc=adstreet
+	. . . . s adbno=$p(adbuild," ")
+	. . . . s adstreet=$p(adbuild," ",2,blen-1)
+	. . . . s adbuild=""
+	. . . . S done=""
+	i adbno="",adeploc?1n.n!(adeploc?1n.n1l) d
+	. s adbno=adeploc
+	. s adeploc="" 
+ADFLA	q
 fixfbns(adflat,adbuild,adbno,adstreet)	;
 	n i,xbuild,done
 	i adflat="",adbuild="",adbno="",adstreet[" ",'$D(^UPRNX("X.STR",ZONE,adstreet))  d

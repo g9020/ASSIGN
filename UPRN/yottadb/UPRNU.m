@@ -463,7 +463,7 @@ levensh(s,t,min,force)
 	;force is when you want to force a minimum distance less than defaults
 	;	
 	;	
-	n matched,d,m,n,result,i,j,result
+	n matched,d,m,n,result,i,j
 	set matched=0
 	s s=$e(s,1,20)
 	s t=$e(t,1,20)
@@ -968,6 +968,7 @@ scots ;
 	S ^UPRNS("SWAP","upstairs")="first"
 	S ^UPRNS("SWAP","upper")="first"
 	S ^UPRNS("SWAP","farmhouse")="farm cottage"
+	S ^UPRNS("SWAP","bowling")="bowls"
 	S ^UPRNS("CORRECT","cresent")="crescent"
 	S ^UPRNS("CORRECT","sttreet")="street"
 	S ^UPRNS("CORRECT","st")="street"
@@ -987,6 +988,7 @@ scots ;
 	S ^UPRNS("CORRECT","c/home")="care home"
 	S ^UPRNS("FLATEXTRA","studio")=""
 	S ^UPRNS("FLATEXTRA","house")=""
+	S ^UPRNS("FLATEXTRA","maisonette")=""
 	S ^UPRNS("FLAT","flat no")=""
 	S ^UPRNS("FLAT","rooms")=""
 	S ^UPRNS("FLAT","maisonette")=""
@@ -997,6 +999,7 @@ scots ;
 	S ^UPRNS("FLAT","unit")=""
 	S ^UPRNS("FLAT","room")=""
 	S ^UPRNS("FLAT","apartment")=""
+	S ^UPRNS("FLAT","stand")=""
 	S ^UPRNS("FLAT","apt")=""
 	S ^UPRNS("FLAT","plot")=""
 	;S ^UPRNS("FLAT","tower")=""

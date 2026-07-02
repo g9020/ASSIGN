@@ -92,15 +92,15 @@ getpost(address,adpost) ;
 	n d,x,i,p
 	s d="~"
 	set adpost=$$lc^UPRNL($p(address,d,$l(address,"~")))
-	set adpost=$tr(post," ") ;Remove spaces
+	set adpost=$tr(adpost," ","") ;Remove spaces
 	;	
-	i '$$validp^UPRN(adpost) do
+	i '$$validp^UPRN(adpost,1) do
 	. S p="",adpost=""
 	. F i=$l(address)-10:1:$l(address) s p=p_$e(address,i)
 	. S x=$$TR^LIB($p(p," ",$l(p," ")-1,$l(p," "))," ","")
-	. I $$validp^UPRN(x) s adpost=x quit
+	. I $$validp^UPRN(x,0) s adpost=x quit
 	. s x=$p(p," ",$l(p," "))
-	. I $$validp^UPRN(x) s adpost=x
+	. I $$validp^UPRN(x,0) s adpost=x
 	. quit
 	I adpost'="" s address=$p(address,"~",1,$l(address,"~")-1)
 	q
@@ -114,7 +114,10 @@ addlines ;Gets address lines
 	. I $D(^UPRNS("COUNTY",part)) q
 	. s tempadd=tempadd_$s(tempadd="":part,1:"~"_part)
 	S addlines=$l(tempadd,"~")
+	s address=tempadd
 	;	
+	if ZONE="" D
+	. S ZONE=$O(^UPRNX("X9",$p(address,"~",$l(address,"~")),""))
 f3 ;too many address lines may be duplicate post code
 	i addlines>2 d
 	. f i=2:1:addlines d
@@ -183,7 +186,7 @@ f12 i addlines=4 d
 	. s adbuild=$p(address,d,2)
 	. s adstreet=$p(address,d,3)
 	. s adloc=$p(address,d,4)
-	. I $D(^UPRNX("X.BLD",ZONE,adflat)) d
+	. I $D(^UPRNX("X.BLD",ZONE,adflat)),'$D(^UPRNX("X.FLAT",ZONE,adflat)) d
 	. . s adtown=adloc
 	. . s adloc=adstreet
 	. . s adstreet=adbuild
@@ -195,7 +198,7 @@ f13 i addlines=5 d
 	. s adepth=$p(address,d,3)
 	. s adstreet=$p(address,d,4)
 	. s adloc=$p(address,d,5)
-	. I $D(^UPRNX("X.BLD",ZONE,adflat)) d
+	. I $D(^UPRNX("X.BLD",ZONE,adflat)),'$D(^UPRNX("X.FLAT",ZONE,adflat)) d
 	. . s adtown=adloc
 	. . s adloc=adstreet
 	. . s adstreet=adepth
@@ -209,7 +212,7 @@ f14 i addlines=6 d
 	. s adstreet=$p(address,d,34)
 	. s adloc=$p(address,d,5)
 	. S adtown=$p(address,d,6)
-	. I $D(^UPRNX("X.BLD",ZONE,adflat)) d
+	. I $D(^UPRNX("X.BLD",ZONE,adflat)),'$D(^UPRNX("X.FLAT",ZONE,adflat)) d
 	. . s adeploc=adstreet
 	. . s adstreet=adepth
 	. . s adepth=adbuild
@@ -229,16 +232,23 @@ f16 f var="adflat","adbuild","adstreet","adepth","adeploc","adloc","adtown" d
 	. . s @var=$$tr^UPRNL(@var,"  "," ")
 	;	
 04021 ;
-	set address("original")=$$tr^UPRNL($$lt^UPRNL(adpost_" "_$$flat^UPRNU(adflat)_" "_$$flat^UPRNU(adbuild)_" "_adepth_" "_adstreet_" "_adeploc),"  "," ")
+	set address("original1")=$tr(adpost_" "_$$flat^UPRNU(adflat)_" "_$$flat^UPRNU(adbuild)_" "_adbno_" "_adepth_" "_adstreet_" "_adeploc_" "_adloc," ","")
+	set address("original")=$tr(adpost_" "_adflat_" "_adbuild_" "_" "_adbno_" "_adepth_" "_adstreet_" "_adeploc_" "_adloc," ","")
+	I adstreet'="" d
+	. set address("original2")=$tr(adpost_" "_adflat_" "_adbuild_" "_" "_adbno_" "_adepth_" "_adstreet," ","")
+	. set address("original3")=$tr(adpost_" "_$$flat^UPRNU(adflat)_" "_$$flat^UPRNU(adbuild)_" "_" "_adbno_" "_adepth_" "_adstreet," ","")
+	I adeploc'="" d
+	. set address("original4")=$tr(adpost_" "_adflat_" "_adbuild_" "_" "_adbno_" "_adepth_" "_adstreet_" "_adeploc," ","")
+	. set address("original5")=$tr(adpost_" "_$$flat^UPRNU(adflat)_" "_$$flat^UPRNU(adbuild)_" "_" "_adbno_" "_adepth_" "_adstreet_" "_adeploc," ","")
 	;	
 	;
 	q
-
+	;
 f16a f var="adflat","adbuild","adstreet","adepth","adeploc","adloc","adtown" d
 	. s @var=$$lt^UPRNL(@var)
 	. quit
 	quit
-	
+	;	
 fields ;Attempt to correct
 	;	
 	;	
@@ -354,6 +364,10 @@ f35a ;Brackets
 	;
 	s address("oflat")=adflat
 	s adflat=$$fixflat(adflat)
+	; number in dependent thoroughfare
+	i adbno=""&(adepth?1n.n!(adepth?1n.n1l)) do
+	. s adbno=adepth
+	. s adepth=""
 	i adflat'="" d
 	. i adbuild?1"flat"." "."no"1" "1n.n."-".n,adflat?1n.n.l,adbno="",adstreet'="" d
 	. . s adbno=adflat
@@ -698,7 +712,9 @@ f122 ;Now has flat as number and number still in street
 	s address("ostr")=adstreet
 	s adbuild=$$correct^UPRNU(adbuild)
 	s adstreet=$$correct^UPRNU(adstreet)
+	s address("oflat")=adflat
 	set adflat=$$flat^UPRNU($$co($$correct^UPRNU(adflat)))
+	;	
 	;	
 	 i adbno'="" s adbno=$$flat^UPRNU($$co($$correct^UPRNU(adbno)))
 	;	

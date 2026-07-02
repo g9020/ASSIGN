@@ -14,10 +14,34 @@ GO ;Next the post office DPA table
 	;
 	;
 	d SETSWAPS^UPRNU
+	d AREAS^UPRN1A
 	;Next the local authority LPI table
 	S ^STATS("END")=$H
 	Q
 	;
+ONEINDEX(index) ;Rebuilds a single index
+	n d,rec,table,key,uprn,town,post,flat,build,bno,depth,street,deploc,loc,ZONE
+	s d="~"
+	s uprn=""
+	for  s uprn=$O(^UPRN("U",uprn)) q:uprn=""  d
+	. s table=""
+	. for  s table=$O(^UPRN("U",uprn,table)) q:table=""  d
+	. . S key=""
+	. . for  s key=$O(^UPRN("U",uprn,table,key)) q:key=""  d
+	. . . s rec=^UPRN("U",uprn,table,key)
+	. . . q:rec=""
+	. . . s flat=$p(rec,d,1)
+	. . . s build=$p(rec,d,2)
+	. . . s bno=$p(rec,d,3)
+	. . . s depth=$p(rec,d,4)
+	. . . s street=$p(rec,d,5)
+	. . . s deploc=$p(rec,d,6)
+	. . . s loc=$p(rec,d,7)
+	. . . s town=$p(rec,d,8)
+	. . . s post=$p(rec,d,9)
+	. . . i index="ZONE" d setzone(uprn,table,key,town,post,bno,street,flat,build)
+	. . . i index="FLAT",flat'="" S ZONE=$E(post) d indexstr("FLAT",flat)
+	q
 BLPU ;Index on BLPU record
 	s i=1
 	s d="~"
@@ -79,6 +103,7 @@ setind1 ;Sets indexes
 	i town'="" S ^UPRNS("TOWN",town)=""
 	i loc'="" S ^UPRNS("TOWN",loc)=""
 	i town'="" s town=$$correct^UPRNU(town)
+	d setzone(uprn,table,key,town,post,bno,street,flat,build)
 	i flat?1"0/".e!(flat?1"0-".e) s flat=$e(flat,2,$l(flat))
 	s pstreet=$$plural^UPRNU(street)
 	s pbuild=$$plural^UPRNU(build)
@@ -86,13 +111,11 @@ setind1 ;Sets indexes
 	s same=0
 	i pstreet=street,pbuild=build,pdepth=depth s same=1
 	s indrec=post_" "_flat_" "_build_" "_bno_" "_depth_" "_street_" "_deploc_" "_loc
-	for  q:(indrec'["  ")  s indrec=$$tr^UPRNL(indrec,"  "," ")
-	s indrec=$$lt^UPRNL(indrec)
+	s indrec=$tr(indrec," ","")
 	S ^UPRNX("X",indrec,uprn,table,key)=""
 	i 'same d
 	. s indrec=post_" "_flat_" "_pbuild_" "_bno_" "_pdepth_" "_pstreet_" "_deploc_" "_loc
-	. for  q:(indrec'["  ")  s indrec=$$tr^UPRNL(indrec,"  "," ")
-	. s indrec=$$lt^UPRNL(indrec)
+	. s indrec=$tr(indrec," ","")
 	. S ^UPRNX("X",indrec,uprn,table,key)=""
 	i deploc'="" d
 	. s ^UPRNX("X5",post,street_" "_deploc,bno,build,flat,uprn,table,key)=""
@@ -109,6 +132,8 @@ setind1 ;Sets indexes
 	. set ^UPRNX("X3",ZONE,pdepth,bno,post,uprn,table,key)=""
 	. D indexstr("STR",depth)
 	. i pdepth'=depth D indexstr("STR",pdepth)
+	i bno'="",street'="" d
+	. s ^UPRNX("X10",ZONE,bno,street,uprn,table,key)=""
 	i deploc'="",street="" d
 	. S ^UPRNX("X5",post,deploc,bno,build,flat,uprn,table,key)=""
 	i loc'="",build'="",street="",bno="" d
@@ -139,6 +164,7 @@ setind1 ;Sets indexes
 	. set ^UPRNX("X2",build,street,flat,post,bno,uprn,table,key)=""
 	I flat'="",bno'="",street'="",build'="" d
 	. S ^UPRNX("X4",post,street,bno,flat,build,uprn,table,key)=""
+	i flat'="" d indexstr("FLAT",flat)
 	if build="",org'="" d
 	. set ^UPRNX("X5",post,street,bno,org,flat,uprn,table,key)=""
 	. i 'same d
@@ -175,6 +201,16 @@ setind1 ;Sets indexes
 	. i build'="" d
 	. . S ^UPRNX("X8",build,flat,loc,uprn,table,key)=""
 eind q
+setzone(uprn,table,key,town,post,bno,street,flat,build) ;Sets the zone index
+	n zone
+	s zone=$e(post,1)
+	i town'="" d
+	. S ^UPRNX("X9",town,zone)=""
+	i bno'="",street'="",flat="",build="" d
+	. S ^UPRNX("X10",zone,bno,street,uprn,table,key)=""
+	I flat?2l.l1" "1n.e,street'="",build'="" d
+	. S ^UPRNX("X11",zone,flat,post)="" 
+	q 
 indexstr(index,term)         ;Indexes street or building etc
 	n i,word
 	S ^UPRNX("X."_index,ZONE,term)=term

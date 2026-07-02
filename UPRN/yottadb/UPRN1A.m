@@ -97,6 +97,8 @@ AREAS ;
 	for  s post=$O(^UPRNX("X1",post)) q:post=""  d
 	. s area=$$area^UPRN(post)
 	. S ^UPRN("AREAS",area)=""
+	. s sector=$$sector^UPRN(post)
+	. S ^UPRN("SECTORS",sector)=""
 	q
 IMPCLASS ;
 	S ^IMPORT("LOAD")="Class file"
@@ -491,9 +493,10 @@ IMPLPI ;Imports and indexes LPI file
 	Q
 	;	
 IMPCOUNT ;
+	s abp=^UPRNF("abpfolder")
 	S ^IMPORT("LOAD")="Counties"
 	s del=$C(9)
-	;K ^UPRN("COUNTY")
+	K ^UPRNS("COUNTY")
 	s file=abp_"/Counties.txt"
 	S ^IMPORT("FILE")=$$ESCAPE(file)
 	;	
@@ -605,6 +608,7 @@ welsh(string)      ;Welsh yr y problem
 	i $e(string,1,2)="y-" s string="y"_$e(string,3,100)
 	q string
 	;	
+	;
 IMPBLP ;
 	S ^IMPORT("LOAD")="UPRN file"
 	s file=abp_"/ID21_BLPU_Records.csv"

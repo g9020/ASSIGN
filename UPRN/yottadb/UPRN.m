@@ -1,5 +1,5 @@
 UPRN ;Command line for processing a batch of adresses [ 08/07/2023  9:02 AM ]
-	S version="6.0.0"
+	S version="7.0.0"
 	K ^UPRN("MX") ;[ 05/11/2023  12:26 PM ]
 	K ^UPRN("UX")
 	K ^UPRNI("UM")
@@ -166,7 +166,7 @@ ADRQUAL(rec)         ;
 	i post'="",$l(rec,"~")=2,$D(^UPRNX("X.STR",$e(post),$p(rec,"~"))) d
 	. S ^TUPRN($J,"INVALID")="Insufficient characters"
 	q
-validp(post)       ;
+validp(post,sector)       ;
 	s post=$$lc^UPRNL(post)
 	i post?2l1n1l1n2l q 1
 	i post?1l1n1l1n2l q 1
@@ -174,6 +174,7 @@ validp(post)       ;
 	i post?1l3n2l q 1
 	i post?2l2n2l q 1
 	i post?2l3n2l q 1
+	i $g(sector) i $D(^UPRN("SECTORS",post)) Q 1
 	q 0
 	;	
 MATCHONE(adrec,orgpost,ui)    ;matches one address
@@ -183,6 +184,7 @@ MATCHONE(adrec,orgpost,ui)    ;matches one address
 	s quit=0
 	K ^TPOSS($J)
 	K ^TCUPRN($J)
+	S ^LOG=adrec
 	set adrec=$$lt^UPRNL($$LC^LIB(adrec))
 	set adrec=$tr(adrec,"}{""","")
 	set adrec=$$welsh^UPRN1A(adrec)
@@ -238,7 +240,7 @@ MATCHONE(adrec,orgpost,ui)    ;matches one address
 	;Exact match all fields directly i.e. 1 candidate
 	;
 	;	
-try1 D match(original,adflat,adbuild,adbno,adepth,adstreet,adeploc,adloc,adpost,adf2,adb2,adtown)
+try1 D match(.address,adflat,adbuild,adbno,adepth,adstreet,adeploc,adloc,adpost,adf2,adb2,adtown)
 	s try=1
 	i $D(^TUPRN($J,"MATCHED"))  D  Q
 	. d matched
@@ -248,12 +250,12 @@ try1 D match(original,adflat,adbuild,adbno,adepth,adstreet,adeploc,adloc,adpost,
 	;	
 	D SETADS    
 	I $d(^UPRNS("SAINT",$p(adstreet," "))) d
-	. d match(original,adflat,adbuild,adbno,adepth,"street "_adstreet,adeploc,adloc,adpost,adf2,adb2,adtown)
+	. d match(.address,adflat,adbuild,adbno,adepth,"street "_adstreet,adeploc,adloc,adpost,adf2,adb2,adtown)
 	S try=2
 	i $D(^TUPRN($J,"MATCHED"))  D  Q
 	. d matched
 	i adstreet?1"mc".e d
-	. D match(original,adflat,adbuild,adbno,adepth,"mac"_$e(adstreet,3,50),adeploc,adloc,adpost,adf2,adb2,adtown)
+	. D match(.address,adflat,adbuild,adbno,adepth,"mac"_$e(adstreet,3,50),adeploc,adloc,adpost,adf2,adb2,adtown)
 	I $D(^TUPRN($J,"MATCHED")) d  q
 	. d matched	
 	I '$d(^TUPRN($J,"MATCHED")) D  Q
@@ -271,32 +273,35 @@ SETADS ;
 	set adtown=$g(address("town"))
 	;
 	;	
-	set original=address("original")
 	Q
 	;	
 	;	
-match(original,adflat,adbuild,adbno,adepth,adstreet,adeploc,adloc,adpost,adf2,adb2,adtown) ;
+match(address,adflat,adbuild,adbno,adepth,adstreet,adeploc,adloc,adpost,adf2,adb2,adtown) ;
 	;Match algorithms
 	K ^TPROBABLE($j),^TPOSSIBLE($J),^TFIRSTFLAT($J),^THASFLAT($J)
-	n adpstreet,adpbuild,adflatbl,adplural,indrec,indprec,matched
+	n adpstreet,adpbuild,adflatbl,adplural,indrec,indprec,matched,indrec2,indrec3,indprec2,indprec3
 	set adflatbl=$$flat^UPRNU(adbuild_" ")
 	set adpstreet=$$plural^UPRNU(adstreet)
 	set adpbuild=$$plural^UPRNU(adbuild)
 	set adplural=0
 	i adpstreet'=adstreet s adplural=1
 	if adpbuild'=adbuild s adplural=1
-	s indrec=adpost_" "_adflat_" "_adbuild_" "_adbno_" "_adepth_" "_adstreet_" "_adeploc_" "_adloc
-	for  q:(indrec'["  ")  s indrec=$$tr^UPRNL(indrec,"  "," ")
-	s indrec=$$lt^UPRNL(indrec)
+	s indrec=$tr(adpost_" "_adflat_" "_adbuild_" "_adbno_" "_adepth_" "_adstreet_" "_adeploc_" "_adloc," ","")
+	i adstreet'="" d
+	. s indrec2=$tr(adpost_" "_adflat_" "_adbuild_" "_adbno_" "_adepth_" "_adstreet," ","")
+	i adeploc'="" d
+	. s indrec3=$tr(adpost_" "_adflat_" "_adbuild_" "_adbno_" "_adepth_" "_adstreet_" "_adeploc," ","")
 	i adplural d
-	. s indprec=adpost_" "_adflat_" "_adpbuild_" "_adbno_" "_adepth_" "_adpstreet_" "_adeploc_" "_adloc
-	. for  q:(indprec'["  ")  s indprec=$$tr^UPRNL(indprec,"  "," ")
-	. s indprec=$$lt^UPRNL(indrec)
+	. s indprec=$tr(adpost_" "_adflat_" "_adpbuild_" "_adbno_" "_adepth_" "_adpstreet_" "_adeploc_" "_adloc," ","")
+	. i adpstreet'="" d
+	. . s indprec2=$tr(adpost_" "_adflat_" "_adbuild_" "_adbno_" "_adepth_" "_adpstreet," ","")
+	. i adeploc'="" d
+	. . s indprec3=$tr(adpost_" "_adflat_" "_adbuild_" "_adbno_" "_adepth_" "_adpstreet_" "_adeploc," ","")
 	;	
 	;	
 	K ^UPRNT("Considered")
 	K ^UPRNT("Stats","Matched")
-	n build,matches,ALG,matchrec
+	n matches,ALG,matchrec
 	s matched=0
 	s ALG=""
 	;	
@@ -306,9 +311,29 @@ match(original,adflat,adbuild,adbno,adepth,adstreet,adeploc,adloc,adpost,adf2,ad
 	;	
 	;Full match on post,street, building and flat
 	;Try concatenated fields
-1 s matches=$$matchall(indrec)
+1 	s matches=$$matchall(indrec,0)
 	I $D(^TUPRN($J,"MATCHED")) Q
-	s matches=$$matchall(original)
+	i $g(indrec2)'="" s matches=$$matchall(indrec2,0)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	i $g(indrec3)'="" s matches=$$matchall(indrec3,0)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	i $g(indprec)'="" s matches=$$matchall(indprec,1)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	i $g(indprec2)'="" s matches=$$matchall(indprec2,1)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	i $g(indprec3)'="" s matches=$$matchall(indprec3,1)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	s matches=$$matchall(address("original"),0)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	s matches=$$matchall(address("original1"),0)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	if $g(address("original2"))'="" s matches=$$matchall(address("original2"),0)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	if $g(address("original3"))'="" s matches=$$matchall(address("original3"),0)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	if $g(address("original4"))'="" s matches=$$matchall(address("original4"),0)
+	I $D(^TUPRN($J,"MATCHED")) Q
+	if $g(address("original5"))'="" s matches=$$matchall(address("original5"),0)
 	I $D(^TUPRN($J,"MATCHED")) Q
 	;	
 	;Exact field match single and plural and correction
@@ -871,6 +896,16 @@ match(original,adflat,adbuild,adbno,adepth,adstreet,adeploc,adloc,adpost,adf2,ad
 	;Area post code match, organisation is building and otherwise match
 	S ALG="5500-"
 	s matches=$$match81^UPRNC(adstreet,adbno,adbuild,adflat,adepth,adeploc,adloc,adtown,adpost) 	;
+	i $D(^TUPRN($J,"MATCHED")) q
+5600	;
+	;Street fuzzy, number, not post code but has town	
+	S ALG="5600-"
+	s matches=$$match84^UPRNC(adstreet,adbno,adbuild,adflat,adepth,adeploc,adloc,adtown,adpost) 	;
+	i $D(^TUPRN($J,"MATCHED")) q
+5700	;
+	;Only one number and building in street so number might be flat	
+	s matches=$$match85^UPRNC(adstreet,adbno,adbuild,adflat,adepth,adeploc,adloc,adtown,adpost) 	;
+	Q	
 	Q
 	;	
 	;	
@@ -940,8 +975,13 @@ match20a(post,tstreet,tbno,tbuild,tflat)
 	Q $G(^TUPRN($J,"MATCHED"))
 	;	
 match21(tpost,tstreet,tbno,tbuild,tflat)          ;
+	n oflat
+	s oflat=address("oflat")
+	i '$D(^UPRNX("X3",ZONE,tbuild,tflat)) d
+	. i $D(^UPRNX("X3",ZONE,tbuild,oflat)) d
+	. . s tflat=oflat      
 	;Checks building flat and post code and works back
-	i '$d(^UPRNX("X3",ZONE,tbuild,tflat)) q 0
+	i '$d(^UPRNX("X3",ZONE,tbuild,tflat))
 	s post=""
 	for  s post=$O(^UPRNX("X3",ZONE,tbuild,tflat,post)) q:post=""  d  q:$G(^TUPRN($J,"MATCHED"))
 	. q:post=tpost
@@ -2019,18 +2059,18 @@ match14(tpost,tstreet,tbno,tbuild,tflat,skipbld)          ;
 	;	
 	;
 	;	
-matchall(indrec)   ;
+matchall(indrec,plural)   ;
 	s matchrec="Pe,Se,Ne,Be,Fe"
 	i $D(^UPRNX("X",indrec)) d  Q $G(^TUPRN($J,"MATCHED"))
-	. S ALG="1-match"
-	. s matched=$$setuprns("X",indrec)
-	i adplural d
-	. i $D(^UPRNX("X",indprec)) d
-	. . S ALG="2-match"
-	. . s matched=$$setuprns("X",indprec)
+	. i plural d
+	. . s ALG="2-match"
+	. . s matched=$$setuprns("X",indrec)
 	. . I $D(^TCUPRN($J,"MATCHED")) D
 	. . . M ^TUPRN($J)=^TCUPRN($J)
 	. . . K ^TCUPRN($J)
+	. e  d
+	. . S ALG="1-match"
+	. . s matched=$$setuprns("X",indrec)
 	Q $D(^TUPRN($J,"MATCHED"))
 	;	
 match1(tpost,tstreet,tbno,tbuild,tflat,matchrec) 
@@ -2081,7 +2121,7 @@ match102(tpost,tstreet,tbno,tbuild,tflat)        ;
 match2(tpost,tstreet,tbno,tbuild,tflat,tloc) 
 	;Assumes a match on the number and approx on other things
 	;	
-	n bno,build,street,bno,flat,matched
+	n bno,build,street,flat,matched
 	s matched=0
 	d bestfit^UPRNB(tpost,tstreet,tbno,tbuild,tflat,$g(tloc))
 	I $D(^TUPRN($J,"MATCHED")) Q 1
@@ -2169,7 +2209,7 @@ match202(tpost,tstreet,tbno,tbuild,tflat)
 	;Drop building or check for weird flat/building 
 	;Windy hill, 117 hermon hill, no flat, drop building
 	;Use original building if being used in flat field
-	n bno,build,street,bno,flat,matched
+	n bno,build,street,flat,matched
 m1 I '$$mno^UPRN(tpost,tstreet,tbno,.bno) Q 0
 	;	
 	;	
@@ -3040,19 +3080,19 @@ set(uprn,table,key,dualuse) ;
 	s status=$p(^UPRN("U",uprn),"~",3)
 	s class=$G(^UPRN("CLASS",uprn))
 	i class="" q ""
-	S reside=$G(^UPRN("CLASSIFICATION",class,"residential"))
-	if $get(^TPARAMS($J,"commercials")) set reside=$G(^UPRN("COMMCLASS",class,"commercial"))
-	
+	S reside=$tr($G(^UPRN("CLASSIFICATION",class,"residential"))," ","")
+	if $get(^TPARAMS($J,"commercials")) set reside=$tr($G(^UPRN("COMMCLASS",class,"commercial"))," ","")
+	;	
 	if $get(^TPARAMS($J,"neutral")) do
-	.s reside1=$get(^UPRN("CLASSIFICATION",class,"residential"))
-	.s reside2=$G(^UPRN("COMMCLASS",class,"commercial"))
-	.if reside1="" s reside1="N"
-	.if reside2="" s reside2="N"
-	.if reside1="N",reside2="N" set reside="N" quit
-	.if reside1'="N" set reside=reside1 quit
-	.set reside=reside2
-	.quit
-	
+	. s reside1=$tr($get(^UPRN("CLASSIFICATION",class,"residential"))," ","")
+	. s reside2=$tr($G(^UPRN("COMMCLASS",class,"commercial"))," ","")
+	. if reside1="" s reside1="N"
+	. if reside2="" s reside2="N"
+	. if reside1="N",reside2="N" set reside="N" quit
+	. if reside1'="N" set reside=reside1 quit
+	. set reside=reside2
+	. quit
+	;	
 	i reside="N" q 0
 	i reside="?" d
 	. i $g(dualuse) s reside=1
